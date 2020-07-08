@@ -1,4 +1,5 @@
 module Map = Base.Map
+module String = Base.String
 
 let is_wordchar = function
     | 'a'..'z'
@@ -16,16 +17,11 @@ let bump map word =
         | None   -> 0
     in
     Map.set map ~key:word ~data:(keyget + 1)
-(*
- * 1- pass thru the string with an index, lindex, and rindex
- * 2- ignore all chars not between A-Za-z0-9 and ' (41-5a, 61-7a, 27, 30-39)
- * 3- if a char is between those, start building a string
- * 4- 27 (quote) is preserved only if lindex and rindex are printable
- * 5- add string to SMap
- *)
+
+
 let word_count s =
-    let s = "==" ^ (String.lowercase_ascii s) ^ "==" in
-    let smap = ref (Map.empty (module Base.String))  in
+    let s = "==" ^ (String.lowercase s) ^ "==" in
+    let smap = ref (Map.empty (module String)) in
     let stmp = ref "" in
 
     for i = 1 to (String.length s) - 2 do
