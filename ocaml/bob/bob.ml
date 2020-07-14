@@ -1,17 +1,17 @@
+let is_lower c = 96 < Char.code c && Char.code c < 123
+let is_upper c = 64 < Char.code c && Char.code c < 91
+
+let rec string_any ?(i=0) (fn: char -> bool) str =
+    if i = String.length str then false
+    else fn str.[i] || string_any ~i:(i+1) fn str
+
 let response_for s = match String.trim s with
   | "" -> "Fine. Be that way!"
-  | cs -> 
-    let cs_len     = String.length cs in
-    let is_asking  = cs_len-1 |> String.get cs |> (=) '?' in
+  | cs ->
+    let cs_length  = String.length cs         in
+    let is_asking  = cs.[cs_length - 1] = '?' in
     let is_yelling =
-      let is_lower c = 96 < Char.code c && Char.code c < 123 in
-      let is_upper c = 64 < Char.code c && Char.code c < 91  in
-      let rec cs_any ?(i=0) check =
-        match i with
-        | x when x = cs_len -> false
-        | _ -> check cs.[i] || cs_any check ~i:(i+1)
-      in 
-      cs_any is_upper && not @@cs_any is_lower
+        string_any is_upper cs && not (string_any is_lower cs)
     in
     match is_asking, is_yelling with
         | false,     false      -> "Whatever."
