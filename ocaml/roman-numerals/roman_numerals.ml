@@ -13,8 +13,8 @@ let roman_table = [ (1000, "M")
                   ; (1,    "I")
                   ]
 
-let rec roman ?(s="") ?(rs=roman_table) n = 
-    let (i, r)::rst = rs in 
+let rec roman ?(s="") ?(rs=roman_table) n =
+    let (i, r)::rst = rs in (* we never reach [] *)
     match n with
         | 0             -> s
         | n when n >= i -> roman ~s:(s^r) ~rs:rs (n-i)
