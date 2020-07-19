@@ -1,4 +1,4 @@
-let rec recite from until =
+let recite from until =
     let num = function
       | -1 -> "99 bottles of beer"
       | 0  -> "no more bottles of beer"
