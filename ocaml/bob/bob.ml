@@ -1,5 +1,5 @@
-let is_lower c = 96 < Char.code c && Char.code c < 123
-let is_upper c = 64 < Char.code c && Char.code c < 91
+let is_lower = function 'a'..'z' -> true | _ -> false
+let is_upper = function 'A'..'Z' -> true | _ -> false
 
 let rec string_any ?(i=0) (fn: char -> bool) str =
     if i = String.length str then false
