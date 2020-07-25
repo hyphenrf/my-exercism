@@ -1,0 +1,18 @@
+.globl binary_convert
+
+# input is a0, output is v0
+# $t1 is the current char
+binary_convert:
+	li    $v0, 0 #reset the acc
+LOOP:
+	lb    $t1, 0($a0)
+	beqz  $t1, STOP     #stop on \0
+
+	subi  $t1, $t1, '0' #ascii offset '0' -> 0, '1' -> 1
+	sll   $v0, $v0, 1   #shift the binary
+	or    $v0, $v0, $t1 #set the new bit
+	addi  $a0, $a0, 1   #pointer incr
+
+	j     LOOP
+STOP:
+	jr    $ra #return (program exits without this)

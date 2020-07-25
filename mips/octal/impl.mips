@@ -1,0 +1,19 @@
+# This is exactly like binary but we do 3 bits at a time
+.globl octal_convert
+
+octal_convert:
+	li    $v0, 0
+
+LOOP:
+	lb    $t1, 0($a0)
+	beqz  $t1, STOP
+
+	subi  $t1, $t1, '0'
+	sll   $v0, $v0, 3 # <-- Here
+	or    $v0, $v0, $t1
+	addi  $a0, $a0, 1
+
+	j     LOOP
+
+STOP:
+	jr    $ra
