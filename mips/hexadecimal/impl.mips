@@ -1,0 +1,48 @@
+# This is exactly like binary but we do 4 bits at a time
+# Additionally, converting hex digit to its value isn't as trivial 
+# as saying c - '0', BUT we can do it without branching! ..If we assume we
+# always get valid hex string and don't program defensively.
+
+# Some things to note about the ascii table (man ascii):
+#   - a starts at 0x61 (7th bit set)
+#   - A starts at 0x41 (7th bit set)
+#   - 0 starts at 0x30 (7th bit unset)
+
+# Meaning:
+#  I. If I check the 7th bit, I can know whether it's _not_ a number
+# II. If I unset the left byte, I can get a somewhat immediate value:
+# '0'..'9' becomes 0..9 and 'aA'..'fF' becomes 1..6
+# so if I use (I.) value, either 0 or 1, as an offset to an array, I can extract
+# aA..fF's value from its ascii code and do the routine without a single branch:
+
+# Steps:
+# 1. offsets = {0, 9} --> use the value from below as index to this array
+# 2. offset  = n >> 6 --> checking the 7th bit, output is 0 or 1 for ascii
+# 3. value   = n & 0x0f + offsets[offset] --> calculate the value
+
+.globl hex_convert
+
+.data
+offsets: .byte 0, 9 #step 1.
+
+.text
+hex_convert:
+	li    $v0, 0
+LOOP:
+	lb    $t0, ($a0)
+	beqz  $t0, STOP
+
+	la    $t1, offsets    #step 1.
+	srl   $t2, $t0, 6     #step 2.
+	add   $t1, $t1, $t2   #start step 3. // offsets_ptr + offset
+	lb    $t1, ($t1)      #store offsets[0] in offset_value
+	andi  $t0, $t0, 0x0f  #unset left byte to get ascii_position
+	add   $t0, $t0, $t1   #end step 3. // ascii_position + offset_value
+
+	sll   $v0, $v0, 4
+	or    $v0, $v0, $t0
+	addi  $a0, $a0, 1
+
+	j     LOOP
+STOP:
+	jr    $ra
