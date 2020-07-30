@@ -1,0 +1,32 @@
+.globl transcribe_rna
+
+# I noticed that:
+# - A,G,C,U are all odd numbers
+# - to transcribe, all you need to do is toggle the third bit (0x04)
+# - and IF it's U, we have to set the 5th bit (0x45 -> 0x55)
+
+# To make good use of these observations, we have to normalise AGCT to be all in
+# the 0x4[odd] form. This allows the loop to branch only once instead of 3 times
+
+.text
+transcribe_rna:
+	move  $a2, $a1 #incrementable ptr for a1
+LOOP:
+	lb    $t0, ($a0)
+	beqz  $t0, STOP
+
+	or    $t0, $t0, 0x01 # if 0x54 make it 0x55
+	and   $t0, $t0, 0xef # if 0x5* make it 0x4*
+	xor   $t0, $t0, 0x04 # do the transformation
+
+	beq   $t0, 0x45, fix_u # A -> U(0x55) instead of E(0x45)
+	j     store_t0
+fix_u:
+	or    $t0, $t0, 0x10
+store_t0:
+	sb    $t0, ($a2)
+	addi  $a0, $a0, 1
+	addi  $a2, $a2, 1
+	j     LOOP
+STOP:
+	jr    $ra
