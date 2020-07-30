@@ -1,0 +1,24 @@
+.globl difference_of_squares
+
+# $t0 - square of sums
+# $t1 - sum of squares
+# $t2 - a square
+# registers that are referenced before assignment need to be cleared
+.text
+difference_of_squares:
+	move  $t0, $zero
+	move  $t1, $zero
+LOOP:
+	beqz  $a0, STOP
+
+	mul   $t2, $a0, $a0
+	add   $t1, $t1, $t2
+	add   $t0, $t0, $a0
+
+	subi  $a0, $a0, 1
+	j     LOOP
+STOP:
+	mul   $t0, $t0, $t0
+	sub   $v0, $t0, $t1
+	jr    $ra
+
