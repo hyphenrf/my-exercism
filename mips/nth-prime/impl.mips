@@ -1,0 +1,54 @@
+.globl nth_prime
+
+# $a0 nth register
+# $v0 prime register
+# $a1 tested-for prime (is_prime's argument)
+# $v1 prime flag
+
+.text
+
+nth_prime:
+	li    $v0, 2
+
+	subi  $a0, $a0, 1
+	beqz  $a0, np_FINISH # 1st prime
+	addi  $v0, $v0, 1    # $v0 = 3
+	subi  $a0, $a0, 1
+	beqz  $a0, np_FINISH # 2nd prime (now we can jump in 2's as all evens
+	                     # aren't prime
+np_LOOP:
+	addi  $v0, $v0, 2    # $v0 = 5, 7, 9, ...
+
+	move  $a1, $v0
+	j     is_prime       # is_prime($a1)
+ip_return:
+	beqz  $v1, np_LOOP   # continue if not prime
+	subi  $a0, $a0, 1    # decrement nth if prime
+	bnez  $a0, np_LOOP   # continue if we didn't reach our goal
+
+np_FINISH:
+	jr    $ra
+
+
+is_prime:
+	# $a1 is always >= 5
+	# $a1 will always be odd
+	li    $v1, 0
+	li    $t0, 3
+ip_LOOP:                        # for (t0 = 3; t0² <= a1; t0+=2) if (a1 % t0 == 0) return false
+	mult  $t0, $t0
+	mflo  $t1
+	bgt   $t1, $a1, ip_true # loop ended and we didn't return false
+
+	div   $a1, $t0
+	mfhi  $t1
+	beqz  $t1, ip_false     # $t0 is a divisior of our tested-for prime
+
+	addi  $t0, $t0, 2
+	j     ip_LOOP
+
+ip_true:
+	li    $v1, 1
+
+ip_false:
+	j     ip_return
