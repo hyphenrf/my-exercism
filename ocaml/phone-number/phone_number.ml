@@ -1,71 +1,73 @@
 open Base
-(* I feel like I should revisit this solution and try for something more elegant *)
 
-type invalid = IP | IN
+type token = Number  of char (*2-9*)
+           | Punct   of char (*.-()\s*)
+           | Invalid of badch
+and
+     badch = Alpha
+           | Other
 
-type num_t = Zero
-           | One
-           | Plus
-           | N of char (*2-9*)
-           | P of char (*.-()\s*)
-           | Invalid of invalid
+let token_of_char = function
+    | '0'..'9' as x                           -> Number x
+    | '+' | '(' | ')' | '.' | '-' | ' ' as x  -> Punct x
+    | 'a'..'z' | 'A'..'Z'                     -> Invalid Alpha
+    | _                                       -> Invalid Other
 
-let num_of_char = function
-    | '0' -> Zero
-    | '1' -> One
-    | '+' -> Plus
+let char_of_token = function
+    | Number x | Punct x -> x
+    | Invalid _ -> 'X'
 
-    | '2'..'9'                    as x -> N x
-    | '(' | ')' | '.' | '-' | ' ' as x -> P x
+let (>>|) = Result.(>>|)
+let (>>=) = Result.(>>=)
 
-    | 'a'..'z' | 'A'..'Z' -> Invalid IN
-    | _                   -> Invalid IP
+(**********************************)
+let clean_punct =
+    Array.filter ~f:(function Punct _ -> false | _ -> true)
 
-let char_of_num = function
-    | Zero -> '0'
-    | One -> '1'
-    | N x -> x
-    | _ -> raise (Invalid_argument "char_of_num")
+let tokens_to_string arr =
+    String.init (Array.length arr) ~f:(fun n -> char_of_token arr.(n))
 
-let parse_num_array ?(start=0) arr =
-    let area_code = arr.(start+0) in
-    let exch_code = arr.(start+3) in
-    match area_code, exch_code with
-    | Zero, _ -> Error "area code cannot start with zero"
-    | One,  _ -> Error "area code cannot start with one"
-    | _, Zero -> Error "exchange code cannot start with zero"
-    | _, One  -> Error "exchange code cannot start with one"
-    | _ -> Ok (String.init 10 ~f:(fun n -> char_of_num arr.(n+start)))
+let remove_cleaned_country_code =
+    String.chop_prefix_if_exists ~prefix:"1"
 
-
-let verify_num_array a =
-    match 
-        Array.find a ~f:(function Invalid _ -> true | _ -> false)
+(**********************************)
+let find_invalids arr =
+    match
+    Array.find arr ~f:(function Invalid _ -> true | _ -> false)
     with
-    | Some n -> 
-       begin match n with
-             | Invalid IP -> Error "punctuations not permitted"
-             | Invalid IN -> Error "letters not permitted"
-             | _ -> failwith "unreachable"
-       end
-    | None -> 
-       begin
-         Array.filter a ~f:(function Plus | P _ -> false | _ -> true)
-         |> (fun a -> match Array.length a with
-         | 11 -> begin a.(0) |> 
-                   function 
-                   | N _ | Zero -> Error "11 digits must start with 1"
-                   | One -> parse_num_array a ~start:1
-                   | _ -> failwith "unreachable"
-                 end
-         | 10 -> parse_num_array a
-         | n  -> if n > 11 
-                 then Error "more than 11 digits"
-                 else Error "incorrect number of digits")
-       end
+    | Some a -> begin 
+        match a with
+        | Invalid Alpha -> Error "letters not permitted"
+        | Invalid Other -> Error "punctuations not permitted"
+        | _ -> assert false
+    end
+    | None -> Ok arr
 
+let verify_codes ?(start=0) arr =
+    match arr.(start+0), arr.(start+3) with
+    | Number '0', _ -> Error "area code cannot start with zero"
+    | Number '1', _ -> Error "area code cannot start with one"
+    | _, Number '0' -> Error "exchange code cannot start with zero"
+    | _, Number '1' -> Error "exchange code cannot start with one"
+    | _ -> Ok arr
 
+let verify_values arr =
+    match Array.length arr with
+    | n when n > 11 -> Error "more than 11 digits"
+    | n when n < 10 -> Error "incorrect number of digits"
+    | 10 -> verify_codes arr
+    | 11 -> begin match arr.(0) with 
+                  | Number '1' -> verify_codes ~start:1 arr
+                  | _ -> Error "11 digits must start with 1"
+    end 
+    | _ -> assert false
+
+(**********************************)
 let number s =
     s |> String.to_array
-      |> Array.map ~f:num_of_char
-      |> verify_num_array
+      |> Array.map ~f:token_of_char
+      |> clean_punct
+      |> find_invalids
+     >>= verify_values
+     >>| tokens_to_string
+     >>| remove_cleaned_country_code
