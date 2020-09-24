@@ -1,4 +1,5 @@
 open Base
+(* I feel like I should revisit this solution and try for something more elegant *)
 
 type invalid = IP | IN
 
@@ -24,41 +25,43 @@ let char_of_num = function
     | Zero -> '0'
     | One -> '1'
     | N x -> x
+    | _ -> raise (Invalid_argument "char_of_num")
 
 let parse_num_array ?(start=0) arr =
-    let area_code = Array.get arr (start+0) in
-    let exch_code = Array.get arr (start+3) in
+    let area_code = arr.(start+0) in
+    let exch_code = arr.(start+3) in
     match area_code, exch_code with
     | Zero, _ -> Error "area code cannot start with zero"
     | One,  _ -> Error "area code cannot start with one"
     | _, Zero -> Error "exchange code cannot start with zero"
     | _, One  -> Error "exchange code cannot start with one"
-    | _ -> Ok (String.init 10 
-                 ~f:(fun n -> char_of_num @@ Array.get arr (n+start)))
+    | _ -> Ok (String.init 10 ~f:(fun n -> char_of_num arr.(n+start)))
 
 
 let verify_num_array a =
     match 
         Array.find a ~f:(function Invalid _ -> true | _ -> false)
     with
-    | Some Invalid n -> 
+    | Some n -> 
        begin match n with
-             | IP -> Error "punctuations not permitted"
-             | IN -> Error "letters not permitted"
+             | Invalid IP -> Error "punctuations not permitted"
+             | Invalid IN -> Error "letters not permitted"
+             | _ -> failwith "unreachable"
        end
     | None -> 
        begin
-         let a = Array.filter ~f:(function Plus | P _ -> false | _ -> true) a in
-         let len = Array.length a in
-         match len with
-         | a when a < 10 -> Error "incorrect number of digits"
-         | a when a > 11 -> Error "more than 11 digits"
-         | 11 -> begin Array.get a 0 |> 
-                       function 
-                       | N _ | Zero -> Error "11 digits must start with 1"
-                       | One -> parse_num_array a ~start:1
+         Array.filter a ~f:(function Plus | P _ -> false | _ -> true)
+         |> (fun a -> match Array.length a with
+         | 11 -> begin a.(0) |> 
+                   function 
+                   | N _ | Zero -> Error "11 digits must start with 1"
+                   | One -> parse_num_array a ~start:1
+                   | _ -> failwith "unreachable"
                  end
          | 10 -> parse_num_array a
+         | n  -> if n > 11 
+                 then Error "more than 11 digits"
+                 else Error "incorrect number of digits")
        end
 
 
