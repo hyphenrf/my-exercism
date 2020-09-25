@@ -22,11 +22,11 @@ let decode s = if String.length s < 2 then s else
               | Text a,  Delim b -> expand cs ~s:(s^String.make
                                                     (Int.of_string a)
                                                     (Char.of_string b))
-              | Text _, Text _ -> failwith "never happens"
+              | Text _, Text _ -> assert false
             end
         | [Delim a] -> s^a
         | [] -> s
-        | [Text _] -> failwith "never happens"
+        | [Text _] -> assert false
     in
     s |> full_split (regexp_case_fold "[a-z ]")
       |> expand
