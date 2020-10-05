@@ -6,6 +6,7 @@ let length l = fold l ~init:0 ~f:(fun acc _ -> acc+1)
 
 let reverse l = fold l ~init:[] ~f:(fun xs x -> x::xs)
 
+(* A recursive definition is faster but overflows the stack *)
 let map ~f l = fold l ~init:[] ~f:(fun xs x -> f x::xs)
     |> reverse
 
@@ -16,4 +17,5 @@ let filter ~f l = fold l ~init:[]
 let append l r = reverse l 
     |> fold ~init:r ~f:(fun xs x -> x::xs)
 
-let concat l = fold ~init:[] ~f:append l
+let concat l = reverse l
+    |> fold ~init:[] ~f:(fun xs x -> append x xs)
