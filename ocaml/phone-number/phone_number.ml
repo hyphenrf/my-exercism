@@ -7,8 +7,8 @@ let string_partition f = String.fold
     ~init:("", "") 
     ~f:(fun (l, r) c -> 
         if f c 
-        then l ^ Base.String.of_char c, r 
-        else l, r ^ Base.String.of_char c)
+        then l ^ String.of_char c, r
+        else l, r ^ String.of_char c)
 
 let invalid_punct = function
     | '+' | '-' | '.' | ' ' | '(' | ')' -> false
