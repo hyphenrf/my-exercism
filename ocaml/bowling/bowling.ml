@@ -1,4 +1,6 @@
 type t = { game: int list; bowl: int; frame: int }
+(* TODO: this may be better encoded as a FSM; roll is one hell of an ugly
+ *       function. *)
 
 let new_game = { game = []; bowl = 0; frame = 0 }
 
@@ -27,15 +29,11 @@ let roll pins {game;bowl;frame} =
 
 let score {game;_} =
   let rec aux (frame, score) =
-    if frame < 11 then function
-    | x::(y::z::_ as rest) when x = 10 -> aux (frame+1, score + 10 + y + z) rest
-    | x::y::(z::_ as rest) when x + y = 10 -> aux (frame+1, score + 10 + z) rest
-    | x::y::rest when x + y < 10 -> aux (frame+1, score + x + y) rest
-    | _::_ ->
-        Error "Score cannot be taken until the end of the game"
-    | [] when frame < 11 ->
-        Error "Score cannot be taken until the end of the game"
-    | [] ->
-        Ok score
-    else Fun.const (Ok score)
+    if frame < 11 then
+      function
+      | 10::(y::z::_ as rest)                -> aux (frame+1, score+10+y+z) rest
+      | x::y::(z::_ as rest) when x + y = 10 -> aux (frame+1, score+10+z) rest
+      | x::y::rest           when x + y < 10 -> aux (frame+1, score+x+y) rest
+      | _::_ | [] -> Error "Score cannot be taken until the end of the game"
+    else Fun.const@@ Ok score
   in aux (1, 0) (List.rev game)
