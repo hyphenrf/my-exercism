@@ -1,39 +1,47 @@
-type t = { game: int list; bowl: int; frame: int }
-(* TODO: this may be better encoded as a FSM; roll is one hell of an ugly
- *       function. *)
+type t = { game: int list; bowl: int }
 
-let new_game = { game = []; bowl = 0; frame = 0 }
+let new_game = { game = []; bowl = 0 }
 
-let last2 xs =
-  (try List.hd xs with _ -> 0),
-  (try List.(hd @@ tl xs) with _ -> 0)
 
-let roll pins {game;bowl;frame} =
+let last2 = function
+  | x::y::_ -> x, y
+  | x::_ -> x, 0
+  | [] -> 0, 0
+let odd x = x land 1 = 1
+let even x = not (odd x)
+
+let roll pins {game;bowl} =
+  let x, y = last2 game in
+  let game = pins::game in
+
   if pins < 0 then
     Error "Negative roll is invalid"
   else
-  let x, y = last2 game in
-  let game = pins :: game in
-
-  if frame > 9 || bowl > 2 || frame = 9 && bowl = 2 && x + y < 10 then
-    Error "Cannot roll after game is over"
-  else if pins > 10 || frame < 9 && bowl > 0 && x + pins > 10 || frame = 9 && bowl = 2 && x < 10 && x + pins > 10 && y = 10 then
+  if pins > 10
+  || bowl < 18 && odd bowl && x + pins > 10
+  || bowl = 20 && y = 10 && x < 10 && x + pins > 10
+  then
     Error "Pin count exceeds pins on the lane"
   else
-    let frame, bowl =
-      if frame = 9 then frame, succ bowl
-      else if pins = 10 && bowl = 0 then frame+1, 0
-      else frame + bowl, succ bowl mod 2
-    in
-    Ok {frame;bowl;game}
+  if bowl > 20
+  || bowl = 20 && x + y < 10
+  then
+    Error "Cannot roll after game is over"
+  else
+  if pins = 10 && even bowl && bowl < 18 then
+    Ok { bowl = bowl + 2; game }
+  else
+    Ok { bowl = bowl + 1; game }
+
 
 let score {game;_} =
-  let rec aux (frame, score) =
+  let rec aux (frame, score) game =
     if frame < 11 then
-      function
+      match game with
       | 10::(y::z::_ as rest)                -> aux (frame+1, score+10+y+z) rest
       | x::y::(z::_ as rest) when x + y = 10 -> aux (frame+1, score+10+z) rest
       | x::y::rest           when x + y < 10 -> aux (frame+1, score+x+y) rest
       | _::_ | [] -> Error "Score cannot be taken until the end of the game"
-    else Fun.const@@ Ok score
-  in aux (1, 0) (List.rev game)
+    else
+      Ok score
+  in aux (1, 0) @@ List.rev game
