@@ -1,10 +1,2 @@
-(* util *)
-let (~!) = not
-let (%?) a b =
-  a mod b = 0 
-
-(* solution *)
 let leap_year y =
-  (y %? 4) && 
-    ~!(y %? 100) ||
-          (y %? 400)
+  (y mod 4 = 0) && (y mod 100 <> 0) || (y mod 400 = 0)
